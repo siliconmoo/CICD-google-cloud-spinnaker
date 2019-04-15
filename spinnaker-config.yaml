@@ -1,0 +1,33 @@
+gcs:
+  enabled: true
+  bucket: $BUCKET
+  project: $PROJECT
+  jsonKey: '$SA_JSON'
+
+dockerRegistries:
+- name: gcr
+  address: https://gcr.io
+  username: _json_key
+  password: '$SA_JSON'
+  email: 1234@5678.com
+
+minio: # Disable minio as the default storage backend
+  enabled: false
+
+halyard: # Configure Spinnaker to enable GCP services
+  spinnakerVersion: 1.10.2
+  image:
+    tag: 1.12.0
+  additionalScripts:
+    create: true
+    data:
+      enable_gcs_artifacts.sh: |-
+        \$HAL_COMMAND config artifact gcs account add gcs-$PROJECT --json-path /opt/gcs/key.json
+        \$HAL_COMMAND config artifact gcs enable
+      enable_pubsub_triggers.sh: |-
+        \$HAL_COMMAND config pubsub google enable
+        \$HAL_COMMAND config pubsub google subscription add gcr-triggers \
+          --subscription-name gcr-triggers \
+          --json-path /opt/gcs/key.json \
+          --project $PROJECT \
+          --message-format GCR
